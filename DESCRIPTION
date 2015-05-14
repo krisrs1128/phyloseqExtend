@@ -1,0 +1,8 @@
+Package: phyloseqExtend
+Title: Extend Phyloseq to Rich Data Types
+Version: 0.0.0.9000
+Authors@R: c(person("Kris", "Sankaran", , "kriss1@stanford.edu", role = c("aut", "cre")), person("Julia"), person("Lan"))
+Description: A package to extend phyloseq's functionality to new data types, including NMR, gene expression, and time series data.
+Depends: R (>= 3.1.2)
+License: What license is it under?
+LazyData: true
