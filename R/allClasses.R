@@ -9,6 +9,13 @@
 setClass("spectra", representation(peaks = "logical"),
          contains = "matrix")
 
+# null-unions -------------------------------------------------------------
+#' If a component of the phyloseq extend object is not present, we keep a NULL
+#' placeholder.
+#'
+#' @keywords internal
+setClassUnion("spectraOrNull", c("spectra", "NULL"))
+
 # phyloseq-extend ---------------------------------------------------------
 #' The high-level extended phyloseq object, including new slot types
 #'
@@ -18,6 +25,6 @@ setClass("spectra", representation(peaks = "logical"),
 #'  @exportClass phyloseqExtend
 setClass("phyloseqExtend",
          representation = representation(
-           spectra = "spectra"
+           spectra = "spectraOrNull"
           ),
          contains = "phyloseq")
