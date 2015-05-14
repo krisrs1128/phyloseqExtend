@@ -27,3 +27,27 @@ setMethod("spectra", "phyloseqExtend", function(object) {
 setMethod("spectra", "matrix", function(object) {
   return (new("spectra", object))
 })
+
+
+# call-peaks --------------------------------------------------------------
+#'  @title Extract aligned peaks from raw spectra
+#'  @param spectra A spectra object containing raw spectra reads
+#'  @return spectra The original spectra object, updated so that the data
+#'    object includes a binary indicator for peaks
+#'  @importFrom speaq detectSpecPeaks
+extract_peaks <- function(spectra, ...) {
+  if(spectra@peaks) {
+    warning("spectra peaks are already extracted")
+  } else {
+    n <- nrow(spectra_object@.Data)
+    p <- ncol(spectra_object@.Data)
+    peaks_list <- detectSpecPeaks(spectra_object@.Data, ...)
+    peaks_matrix <- matrix(0, n, p)
+    for(i in 1:length(peaks_list)) {
+      peaks_matrix[i, peaks_list[[i]]] <- 1
+    }
+    spectra@peaks <- TRUE
+  }
+  spectra@.Data <- peaks_matrix
+  return (spectra)
+}
