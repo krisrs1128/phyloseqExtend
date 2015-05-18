@@ -6,7 +6,7 @@
 # plot_spectra ------------------------------------------------------------
 #' @title Plot Spectra Intensities
 #'
-#' @description If spectra(physeq)@peaks is FALSE, then this will plot the
+#' @description If spectra(physeq)[["peaks"]] is FALSE, then this will plot the
 #' raw intensities of each spectrum in the sample. Otherwise, we only plot
 #' the positions and heights of peaks for each sample.
 #'

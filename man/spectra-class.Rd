@@ -8,4 +8,7 @@
 A matrix containing either raw spectra measurements or
    processed peaks indicators or heights.
 }
+\details{
+
+}
 
