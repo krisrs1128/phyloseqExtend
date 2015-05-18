@@ -11,7 +11,7 @@ setMethod("show", "phyloseqExtend", function(object){
   # print spectra summary if there
   spec_obj <- spectra(object)
   if(!is.null(spec_obj)) {
-    cat(paste("spectra()     ", class(spec_obj)[1], ":           [ ", nrow(spec_obj), " samples by ", ncol(spec_obj), " intensities ]", sep = ""), fill = TRUE)
+    cat(paste("spectra()     ", class(spec_obj)[1], ":           [ ", nrow(spec_obj), " samples by ", ncol(spec_obj), " indices ]", sep = ""), fill = TRUE)
   }
 
 })
