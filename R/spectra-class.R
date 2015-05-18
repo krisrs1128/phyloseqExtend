@@ -13,7 +13,7 @@
 #' @docType methods
 #' @export
 
-setGeneric("spectra", function(object) {
+setGeneric("spectra", function(object, peaks = FALSE) {
   standardGeneric("spectra")
 })
 
@@ -27,35 +27,79 @@ setMethod("spectra", "phyloseqExtend", function(object) {
 })
 
 # If a matrix is input, create a new spectra object from that matrix
-setMethod("spectra", "matrix", function(object) {
-  new("spectra", object)
+setMethod("spectra", "matrix", function(object, peaks = FALSE) {
+  new("spectra", object, peaks = peaks)
 })
 
 # If a data.frame or data.table is input, convert to a matrix
-setMethod("spectra", "data.frame", function(object) {
-  spectra(as(object, "matrix"))
+setMethod("spectra", "data.frame", function(object, peaks = FALSE) {
+  spectra(as(object, "matrix"), peaks = peaks)
 })
 
 # call-peaks --------------------------------------------------------------
-#' @title Extract aligned peaks from raw spectra
+#' @title Wrapper for speaq::detectSpecPeaks
 #'
 #' @param spectra A spectra object containing raw spectra reads
-#' @return spectra The original spectra object, updated so that the data
-#'  object includes a binary indicator for peaks
+#' @return peaks_list A list whose i^th element contains the indices
+#' of peaks in the i^th sample
 #' @importFrom speaq detectSpecPeaks
-extract_peaks <- function(spectra, ...) {
-  if(spectra@peaks) {
-    warning("spectra peaks are already extracted")
-  } else {
-    n <- nrow(spectra_object@.Data)
-    p <- ncol(spectra_object@.Data)
-    peaks_list <- detectSpecPeaks(spectra_object@.Data, ...)
-    peaks_matrix <- matrix(0, n, p)
-    for(i in 1:length(peaks_list)) {
-      peaks_matrix[i, peaks_list[[i]]] <- 1
-    }
-    spectra@peaks <- TRUE
-  }
-  spectra@.Data <- peaks_matrix
-  return (spectra)
+get_peaks_list <- function(spectra, ...) {
+  peaks_list <- speaq::detectSpecPeaks(spectra@.Data, ...)
+  return (peaks_list)
+}
+
+# get-spectra-at-peaks ----------------------------------------------------
+#' @title Extract Spectra at Peak Positions
+#'
+#' @param peaks_list A list whose i^th element contains the indices
+#' of peaks in the i^th sample
+#'
+#' @return peaks A matrix containing spectra values filtered to samples
+#'  and measurement indices containining peaks.
+#'
+#' @importFrom reshape2 dcast melt
+#' @importFrom magrittr %>%
+get_spectra_at_peaks <- function(peaks_list) {
+  peaks_ix  <- reshape2::melt(peaks_list)
+  colnames(peaks_ix) <- c("index", "sample")
+  peaks <- peaks_ix %>%
+    cbind(value = t(spectra)[as.matrix(peaks_ix)]) %>%
+    reshape2::dcast(sample ~ index, fill = 0)
+
+  # Give appropriate sample and spectra names
+  rownames(peaks) <- peaks$sample
+  peaks$sample <- NULL
+  colnames(peaks) <- colnames(spectra)[as.numeric(colnames(peaks))]
+  peaks <- as.matrix(peaks)
+  return (peaks)
+}
+
+#' @title Wrapper for dohCluster in speaq
+#'
+#' @param spectra A spectra object containing raw spectra reads
+#' @param peaks_list A list whose i^th element contains the indices
+#' of peaks in the i^th sample
+#'
+#' @return aligned_peaks A matrix whose ij^th element is the value of the j^th
+#' unique peak in the i^th unique sample.
+align_peaks <- function(spectra, peaks_list, ...) {
+  ref_peak <- speaq::findRef(peaks_list)
+  aligned_peaks <- speaq::dohCluster(spectra, peakList = peaks_list,
+                              refInd = ref_peak$refInd, ...)
+  return (aligned_peaks)
+}
+
+#' @title Remove Outliers
+#'
+#' @param physeq A phyloseqExtend object with a nonempty spectra slot
+#' @param thresh Any spectra with maximum value above thresh will be discarded.
+#'
+#' @return None. Removes the outlier samples from the spectra component of the
+#' input physeq object.
+remove_outlier_spectra <- function(physeq, thresh) {
+  spectra <- spectra(physeq)
+  stopifnot(!is.null(spectra))
+  max_vals <- apply(spectra, 1, max)
+  physeq@spectra@.Data <- spectra[which(max_vals <= thresh), ]
+  return (physeq)
 }
