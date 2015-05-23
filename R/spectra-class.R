@@ -103,3 +103,39 @@ remove_outlier_spectra <- function(physeq, thresh) {
   physeq@spectra@.Data <- spectra[which(max_vals <= thresh), ]
   return (physeq)
 }
+
+#' @title Subsample spectra and filter spectra to range based on column names
+#'
+#' @description For long spectra we may want to either 1) subsample to lower
+#' resolution, so that plots can be made more quickly, or 2) filter down to
+#' a specified range of indices, to understand smaller scale phenomena. The
+#' first task here can be accomplished by setting subsample_frac; for example,
+#' setting subsample_frac = 1/2 will return the spectrum matrix filtered to
+#' every other column. For the second task, we require the columns of
+#' \code{spectra} to be numeric, so we can filter cols on whether they are
+#' between x_min and x_max.
+#'
+#' @param spectra An object of class matrix, containing the spectral samples as
+#'  rows.
+#' @param x_min What is the minimum index to display?
+#' @param x_max What is the maximum index to display?
+#' @param subsample_frac We will only plot ever the value at every
+#'  1 / subsample_frac indices. This can accelerate plotting in the case that
+#'  the spectrum is very long, but can lead to missed peaks.
+#'
+#' @return spectra A matrix with the same number of rows as the input, but with
+#'  filtered columns.
+subsample_spectra_cols <- function(spectra, subsample_frac = 1, x_min = NULL,
+                                   x_max = NULL) {
+  spectra <- spectra[, seq(1, ncol(spectra), by = 1 / subsample_frac)]
+  if(!is.null(x_min)) {
+    cols_val <- as.numeric(colnames(spectra))
+    spectra <- spectra[, which(cols_val >= x_min)]
+  }
+  if(!is.null(x_max)) {
+    # have to recompute cols_val, in case cols were dropped above
+    cols_val <- as.numeric(colnames(spectra))
+    spectra <- spectra[, which(cols_val <= x_max)]
+  }
+  return (spectra)
+}

@@ -43,11 +43,16 @@ plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
 #' to \code{speaq} and \code{ggplot2} that can be used to plot these raw
 #' spectra.
 #'
+#' @param spectra_mat An object of class matrix, containing the spectral
+#'  samples as rows.
 #' @param method The R package to use for the plot. Currently only supports
 #'  "speaq" or "ggplot2".
 #' @param log_scale Should the intensities be plotted on a log scale?
 #' @param x_min What is the minimum index to display?
 #' @param x_max What is the maximum index to display?
+#' @param subsample_frac We will only plot ever the value at every
+#'  1 / subsample_frac indices. This can accelerate plotting in the case that
+#'  the spectrum is very long, but can lead to missed peaks.
 #' @param plot_title A title to include for the figure.
 #'
 #' @importFrom speaq drawSpec
@@ -56,27 +61,17 @@ plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
 #' @importFrom data.table data.table
 #' @importFrom dplyr filter
 plot_raw_spectra <- function(spectra_mat, method = "speaq", log_scale = FALSE,
-                             x_min = NULL, x_max = NULL, plot_title = NULL, ...) {
+                             subsample_frac = 1, x_min = NULL, x_max = NULL,
+                             plot_title = NULL, ...) {
+  spectra_mat <- subsample_spectra_cols(spectra_mat, subsample_frac, x_min, x_max)
   if(method == "speaq") {
-    if(is.null(x_min)) x_min <- -1
-    if(is.null(x_max)) x_max <- -1
-    speaq::drawSpec(spectra_mat, startP = x_min, endP = x_max)
-    title(plot_title)
+    speaq::drawSpec(spectra_mat, main = plot_title)
   } else if(method == "ggplot2") {
-
     # Convert from "wide" to "long" format, for ggplot2
     spectra_dat <- data.table::data.table(spectra_mat)
     spectra_dat <- cbind(id = rownames(spectra_mat), spectra_dat)
     spectra_dat <- reshape2::melt(spectra_dat, id.vars = "id", variable.name = "index", value.name = "intensity")
-    spectra_dat$index <- as.numeric(spectra_dat$index)
-
-    # Filter down to the range to plot
-    if(!is.null(x_min)) {
-      spectra_dat <- dplyr::filter(spectra_dat, index >= x_min)
-    }
-    if(!is.null(x_max)) {
-      spectra_dat <- dplyr::filter(spectra_dat, index <= x_max)
-    }
+    spectra_dat$index <- as.numeric(as.character(spectra_dat$index))
 
     # Construct the desired plot
     p <- ggplot(spectra_dat) +
