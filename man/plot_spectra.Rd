@@ -4,8 +4,9 @@
 \alias{plot_spectra}
 \title{Plot Spectra Intensities}
 \usage{
-plot_spectra(physeq, method = "speaq", log_scale = FALSE, x_min = NULL,
-  x_max = NULL, plot_title = NULL, ...)
+plot_spectra(physeq, method = "speaq", log_scale = FALSE,
+  subsample_frac = 1, x_min = NULL, x_max = NULL, col = NULL,
+  linetype = NULL, plot_title = NULL, ...)
 }
 \arguments{
 \item{physeq}{A phyloseq object containing the spectrum to plot}
@@ -14,6 +15,9 @@ plot_spectra(physeq, method = "speaq", log_scale = FALSE, x_min = NULL,
 "speaq" or "ggplot2".}
 
 \item{log_scale}{Should the intensities be plotted on a log scale?}
+
+\item{subsample_frac}{We will only plot ever the value at every
+1 / subsample_frac indices. This can accelerate plotting in the case that}
 
 \item{x_min}{What is the minimum index to display?}
 

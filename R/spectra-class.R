@@ -74,6 +74,9 @@ get_spectra_at_peaks <- function(peaks_list) {
   return (peaks)
 }
 
+
+# wrap-peak-alignment -----------------------------------------------------
+
 #' @title Wrapper for dohCluster in speaq
 #'
 #' @param spectra_object A spectra object containing raw spectra reads
@@ -90,6 +93,8 @@ align_peaks <- function(spectra_object, peaks_list, ...) {
   return (aligned_peaks)
 }
 
+# remove-outliers ---------------------------------------------------------
+
 #' @title Remove Outliers
 #'
 #' @param physeq A phyloseqExtend object with a nonempty spectra slot
@@ -97,6 +102,8 @@ align_peaks <- function(spectra_object, peaks_list, ...) {
 #'
 #' @return None. Removes the outlier samples from the spectra, sample_data and
 #'  otu_table components of the input physeq object.
+#'
+#' @importFrom phyloseq sample_data otu_table
 remove_outlier_spectra <- function(physeq, thresh) {
   spectra_matrix <- spectra(physeq)@.Data
   stopifnot(!is.null(spectra_matrix))
@@ -108,6 +115,8 @@ remove_outlier_spectra <- function(physeq, thresh) {
   physeq@otu_table <- otu_table(physeq)@.Data[, keep_samples]
   return (physeq)
 }
+
+# subsample-cols ----------------------------------------------------------
 
 #' @title Subsample spectra and filter spectra to range based on column names
 #'
@@ -144,6 +153,8 @@ subsample_spectra_cols <- function(spectra_matrix, subsample_frac = 1,
   }
   return (spectra_matrix)
 }
+
+# detect-and-align --------------------------------------------------------
 
 #' @title Wrapper for peak detection and alignment
 #'

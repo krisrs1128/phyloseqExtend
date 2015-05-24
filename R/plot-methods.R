@@ -41,6 +41,8 @@ plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
   }
 }
 
+# plot-raw-spectra --------------------------------------------------------
+
 #' @title Plot Raw Spectra Intensities Across All Indices
 #'
 #' @description Before preprocessing to a collection of peaks, it may be
@@ -60,11 +62,11 @@ plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
 #' @param plot_title A title to include for the figure.
 #'
 #' @importFrom speaq drawSpec
-#' @importFrom ggplot2 ggplot geom_line aes_string
+#' @importFrom ggplot2 ggplot geom_line aes_string facet_grid scale_y_log10
 #' @importFrom reshape2 melt
 #' @importFrom data.table data.table
 #' @importFrom dplyr filter
-#' @importFrom phyloseq sam_data
+#' @importFrom phyloseq sample_data
 plot_raw_spectra <- function(physeq, method = "speaq", log_scale = FALSE,
                              subsample_frac = 1, x_min = NULL, x_max = NULL,
                              col = NULL, linetype = NULL, facet_cols = NULL,

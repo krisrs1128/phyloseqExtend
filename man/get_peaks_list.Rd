@@ -4,10 +4,10 @@
 \alias{get_peaks_list}
 \title{Wrapper for speaq::detectSpecPeaks}
 \usage{
-get_peaks_list(spectra, ...)
+get_peaks_list(spectra_object, ...)
 }
 \arguments{
-\item{spectra}{A spectra object containing raw spectra reads}
+\item{spectra_object}{A spectra object containing raw spectra reads}
 }
 \value{
 peaks_list A list whose i^th element contains the indices

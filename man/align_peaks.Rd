@@ -4,10 +4,10 @@
 \alias{align_peaks}
 \title{Wrapper for dohCluster in speaq}
 \usage{
-align_peaks(spectra, peaks_list, ...)
+align_peaks(spectra_object, peaks_list, ...)
 }
 \arguments{
-\item{spectra}{A spectra object containing raw spectra reads}
+\item{spectra_object}{A spectra object containing raw spectra reads}
 
 \item{peaks_list}{A list whose i^th element contains the indices
 of peaks in the i^th sample}
