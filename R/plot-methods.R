@@ -14,6 +14,8 @@
 #' @param method The R package to use for the plot. Currently only supports
 #'  "speaq" or "ggplot2".
 #' @param log_scale Should the intensities be plotted on a log scale?
+#' @param subsample_frac We will only plot ever the value at every
+#'  1 / subsample_frac indices. This can accelerate plotting in the case that
 #' @param x_min What is the minimum index to display?
 #' @param x_max What is the maximum index to display?
 #'
@@ -22,18 +24,21 @@
 #'
 #' @export
 plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
-                          x_min = NULL, x_max = NULL, plot_title = NULL, ...) {
+                          subsample_frac = 1, x_min = NULL, x_max = NULL,
+                          plot_title = NULL, ...) {
   method <- match.arg(method, choices = c("speaq", "ggplot2"))
-  spectra_mat <- spectra(physeq)
-  stopifnot(!is.null(spectra_mat))
-  if(spectra_mat@peaks) {
-    p <- plot_spectra_peaks(spectra_mat, log_scale, x_min, x_max,
+  spectra_object <- spectra(physeq)
+  stopifnot(!is.null(spectra_object))
+  if(spectra_object@peaks) {
+    p <- plot_spectra_peaks(spectra_object, log_scale, x_min, x_max,
                             plot_title, ...)
   } else {
-    p <- plot_raw_spectra(spectra_mat, method, log_scale, x_min,
-                          x_max, plot_title, ...)
+    p <- plot_raw_spectra(spectra_object, method, log_scale, subsample_frac,
+                          x_min, x_max, plot_title, ...)
   }
-  return (p)
+  if(!is.null(p)) {
+    return (p)
+  }
 }
 
 #' @title Plot Raw Spectra Intensities Across All Indices
@@ -60,16 +65,16 @@ plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
 #' @importFrom reshape2 melt
 #' @importFrom data.table data.table
 #' @importFrom dplyr filter
-plot_raw_spectra <- function(spectra_mat, method = "speaq", log_scale = FALSE,
+plot_raw_spectra <- function(spectra_matrix, method = "speaq", log_scale = FALSE,
                              subsample_frac = 1, x_min = NULL, x_max = NULL,
                              plot_title = NULL, ...) {
-  spectra_mat <- subsample_spectra_cols(spectra_mat, subsample_frac, x_min, x_max)
+  spectra_matrix <- subsample_spectra_cols(spectra_matrix, subsample_frac, x_min, x_max)
   if(method == "speaq") {
-    speaq::drawSpec(spectra_mat, main = plot_title)
+    speaq::drawSpec(spectra_matrix, main = plot_title)
   } else if(method == "ggplot2") {
     # Convert from "wide" to "long" format, for ggplot2
-    spectra_dat <- data.table::data.table(spectra_mat)
-    spectra_dat <- cbind(id = rownames(spectra_mat), spectra_dat)
+    spectra_dat <- data.table::data.table(spectra_matrix)
+    spectra_dat <- cbind(id = rownames(spectra_matrix), spectra_dat)
     spectra_dat <- reshape2::melt(spectra_dat, id.vars = "id", variable.name = "index", value.name = "intensity")
     spectra_dat$index <- as.numeric(as.character(spectra_dat$index))
 
