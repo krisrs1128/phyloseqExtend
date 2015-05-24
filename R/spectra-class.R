@@ -39,12 +39,12 @@ setMethod("spectra", "data.frame", function(object, peaks = FALSE) {
 # call-peaks --------------------------------------------------------------
 #' @title Wrapper for speaq::detectSpecPeaks
 #'
-#' @param spectra A spectra object containing raw spectra reads
+#' @param spectra_object A spectra object containing raw spectra reads
 #' @return peaks_list A list whose i^th element contains the indices
 #' of peaks in the i^th sample
 #' @importFrom speaq detectSpecPeaks
-get_peaks_list <- function(spectra, ...) {
-  peaks_list <- speaq::detectSpecPeaks(spectra@.Data, ...)
+get_peaks_list <- function(spectra_object, ...) {
+  peaks_list <- speaq::detectSpecPeaks(spectra_object@.Data, ...)
   return (peaks_list)
 }
 
@@ -76,16 +76,17 @@ get_spectra_at_peaks <- function(peaks_list) {
 
 #' @title Wrapper for dohCluster in speaq
 #'
-#' @param spectra A spectra object containing raw spectra reads
+#' @param spectra_object A spectra object containing raw spectra reads
 #' @param peaks_list A list whose i^th element contains the indices
 #' of peaks in the i^th sample
 #'
 #' @return aligned_peaks A matrix whose ij^th element is the value of the j^th
 #' unique peak in the i^th unique sample.
-align_peaks <- function(spectra, peaks_list, ...) {
+align_peaks <- function(spectra_object, peaks_list, ...) {
   ref_peak <- speaq::findRef(peaks_list)
-  aligned_peaks <- speaq::dohCluster(spectra, peakList = peaks_list,
-                              refInd = ref_peak$refInd, ...)
+  aligned_peaks <- speaq::dohCluster(spectra_object@.Data,
+                                     peakList = peaks_list,
+                                     refInd = ref_peak$refInd, ...)
   return (aligned_peaks)
 }
 
@@ -94,13 +95,17 @@ align_peaks <- function(spectra, peaks_list, ...) {
 #' @param physeq A phyloseqExtend object with a nonempty spectra slot
 #' @param thresh Any spectra with maximum value above thresh will be discarded.
 #'
-#' @return None. Removes the outlier samples from the spectra component of the
-#' input physeq object.
+#' @return None. Removes the outlier samples from the spectra, sample_data and
+#'  otu_table components of the input physeq object.
 remove_outlier_spectra <- function(physeq, thresh) {
-  spectra <- spectra(physeq)
-  stopifnot(!is.null(spectra))
-  max_vals <- apply(spectra, 1, max)
-  physeq@spectra@.Data <- spectra[which(max_vals <= thresh), ]
+  spectra_matrix <- spectra(physeq)@.Data
+  stopifnot(!is.null(spectra_matrix))
+  max_vals <- apply(spectra_matrix, 1, max)
+
+  keep_samples <- rownames(spectra_matrix)[which(max_vals <= thresh)]
+  physeq@spectra@.Data <- spectra_matrix[keep_samples, ]
+  physeq@sam_data <- sample_data(physeq)[keep_samples, ]
+  physeq@otu_table <- otu_table(physeq)@.Data[, keep_samples]
   return (physeq)
 }
 
@@ -115,27 +120,61 @@ remove_outlier_spectra <- function(physeq, thresh) {
 #' \code{spectra} to be numeric, so we can filter cols on whether they are
 #' between x_min and x_max.
 #'
-#' @param spectra An object of class matrix, containing the spectral samples as
-#'  rows.
+#' @param spectra_matrix An object of class matrix, containing the spectral
+#'  samples as rows.
 #' @param x_min What is the minimum index to display?
 #' @param x_max What is the maximum index to display?
 #' @param subsample_frac We will only plot ever the value at every
 #'  1 / subsample_frac indices. This can accelerate plotting in the case that
 #'  the spectrum is very long, but can lead to missed peaks.
 #'
-#' @return spectra A matrix with the same number of rows as the input, but with
-#'  filtered columns.
-subsample_spectra_cols <- function(spectra, subsample_frac = 1, x_min = NULL,
-                                   x_max = NULL) {
-  spectra <- spectra[, seq(1, ncol(spectra), by = 1 / subsample_frac)]
+#' @return spectra_matrix A matrix with the same number of rows as the input,
+#'  but with filtered columns.
+subsample_spectra_cols <- function(spectra_matrix, subsample_frac = 1,
+                                   x_min = NULL, x_max = NULL) {
+  spectra_matrix <- spectra_matrix[, seq(1, ncol(spectra_matrix), by = 1 / subsample_frac)]
   if(!is.null(x_min)) {
-    cols_val <- as.numeric(colnames(spectra))
-    spectra <- spectra[, which(cols_val >= x_min)]
+    cols_val <- as.numeric(colnames(spectra_matrix))
+    spectra_matrix <- spectra_matrix[, which(cols_val >= x_min)]
   }
   if(!is.null(x_max)) {
     # have to recompute cols_val, in case cols were dropped above
-    cols_val <- as.numeric(colnames(spectra))
-    spectra <- spectra[, which(cols_val <= x_max)]
+    cols_val <- as.numeric(colnames(spectra_matrix))
+    spectra_matrix <- spectra_matrix[, which(cols_val <= x_max)]
   }
-  return (spectra)
+  return (spectra_matrix)
+}
+
+#' @title Wrapper for peak detection and alignment
+#'
+#' @description A common preprocessing step in work with spectra is peak
+#'  alignment. Here, we wrap the peak detection, reference finding, and
+#'  hierarchical clustering peak alignment steps from the speaq package.
+#'
+#' @param physeq A phyloseqExtend object with a nonempty spectra slot
+#' @param detectSpecPeaksOpts A list containing options to pass into the
+#'  detectSpecPeaks function in package speaq.
+#' @param dohClusterOpts A list containing options to pass into the
+#'  dohCluster function in package speaq.
+#'
+#' @return physeq The input physeq object, with the spectra slot modified
+#'  so that all peaks are aligned.
+detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts) {
+
+  # detect peaks
+  detectSpecPeaksOpts <- modifyList(
+    detectSpecPeaksOpts,
+    list(spectra_object = spectra(physeq))
+  )
+  message("Detecting peaks...")
+  peaks <- do.call(get_peaks_list, detectSpecPeaksOpts)
+
+  # align peaks
+  message("Aligning peaks to reference...")
+  dohClusterInput <- modifyList(
+    dohClusterOpts,
+    list(spectra_object = spectra(physeq), peaks_list = peaks)
+  )
+  physeq@spectra <- spectra(do.call(align_peaks, dohClusterInput), peaks = FALSE)
+  return (physeq)
 }
