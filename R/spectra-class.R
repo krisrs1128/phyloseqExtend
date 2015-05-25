@@ -247,7 +247,7 @@ convert_to_peaks <- function(physeq, binary = FALSE, peaks_list = NULL, ...) {
   # If the user only wants binary peaks, return at this step
   if(binary) {
     physeq@spectra <- spectra(peaks_matrix, peaks = TRUE)
-    return (peaks_matrix)
+    return (physeq)
   }
 
   # If we want the actual peaks heights, search for the actual peak heights
