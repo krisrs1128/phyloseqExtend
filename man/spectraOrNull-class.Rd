@@ -5,10 +5,7 @@
 \title{spectra S4 class with placeholder}
 \description{
 If a component of the phyloseq extend object is not present, we keep a NULL
-   placeholder.
-}
-\details{
-
+  placeholder.
 }
 \keyword{internal}
 

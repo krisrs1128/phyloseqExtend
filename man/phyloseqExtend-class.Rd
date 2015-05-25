@@ -5,12 +5,12 @@
 \alias{phyloseqExtend-class}
 \title{The high-level extended phyloseq object, including new slot types}
 \description{
-
+The high-level extended phyloseq object, including new slot types
 }
 \section{Slots}{
 
 \describe{
 \item{\code{spectra}}{An object of class spectra, used for storing metabolomic
-  information}
+information}
 }}
 
