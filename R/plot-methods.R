@@ -28,10 +28,11 @@ plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
                           col = NULL, linetype = NULL, plot_title = NULL, ...) {
   method <- match.arg(method, choices = c("speaq", "ggplot2"))
   stopifnot(!is.null(spectra(physeq)))
-  if(spectra_object@peaks) {
+  if(spectra(physeq)@peaks) {
     stop("peak plotting is not yet supported \n
          set @peaks element in spectra slot to FALSE.")
-    p <- plot_spectra_peaks(physeq, log_scale, x_min, x_max, plot_title, ...)
+    p <- plot_spectra_peaks(physeq, log_scale, subsample_frac, x_min,
+                            x_max, plot_title, ...)
   } else {
     p <- plot_raw_spectra(physeq, method, log_scale, subsample_frac,
                           x_min, x_max, col, linetype, plot_title, ...)
