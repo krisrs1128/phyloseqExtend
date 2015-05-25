@@ -1,24 +1,26 @@
 
 # phyloseqExtend-class ----------------------------------------------------
-#'  @title Assemble several data objects into a phyloseqExtend object.
+#' @title Assemble several data objects into a phyloseqExtend object.
 #'
-#'  @description This creates a phyloseqExtend object from the multiple sources
-#'    of data common in microbiome experiments.
+#' @description This creates a phyloseqExtend object from the multiple sources
+#'   of data common in microbiome experiments.
 #'
-#'  @param otu_table_object An object of class otu_table, to incorporate into
-#'    the phyloseqExtend object. Defaults to NULL.
-#'  @param sample_data_object An object of class sam_data, to incorporate into
-#'    the phyloseqExtend object. Defaults to NULL.
-#'  @param phy_tree_object An object of class phylo, to incorporate into the
-#'    phyloseqExtend object. Defaults to NULL.
-#'  @param spectra_object An object of class spectra, to incorporate into the
-#'    phyloseqExtend object. Defaults to NULL.
-#'  @param refseq_object An object of class refseq, to incorporate into the
-#'    phyloseqExtend object. Defaults to NULL.
+#' @param otu_table_object An object of class otu_table, to incorporate into
+#'   the phyloseqExtend object. Defaults to NULL.
+#' @param sample_data_object An object of class sam_data, to incorporate into
+#'   the phyloseqExtend object. Defaults to NULL.
+#' @param phy_tree_object An object of class phylo, to incorporate into the
+#'   phyloseqExtend object. Defaults to NULL.
+#' @param spectra_object An object of class spectra, to incorporate into the
+#'   phyloseqExtend object. Defaults to NULL.
+#' @param refseq_object An object of class refseq, to incorporate into the
+#'   phyloseqExtend object. Defaults to NULL.
 #'
-#'  @return phyloseqExtend_object An object of class phyloseqExtend, with slots
-#'    containing each of the input data objects, and NULL for potential but
-#'    unoccupied slots.
+#' @return phyloseqExtend_object An object of class phyloseqExtend, with slots
+#'   containing each of the input data objects, and NULL for potential but
+#'   unoccupied slots.
+#' @docType methods
+#' @export
 phyloseqExtend <- function(otu_table_object = NULL,
                            sample_data_object = NULL,
                            phy_tree_object = NULL,

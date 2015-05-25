@@ -12,7 +12,6 @@
 #'
 #' @docType methods
 #' @export
-
 setGeneric("spectra", function(object, peaks = FALSE) {
   standardGeneric("spectra")
 })
@@ -43,6 +42,7 @@ setMethod("spectra", "data.frame", function(object, peaks = FALSE) {
 #' @return peaks_list A list whose i^th element contains the indices
 #' of peaks in the i^th sample
 #' @importFrom speaq detectSpecPeaks
+#' @export
 get_peaks_list <- function(spectra_object, ...) {
   peaks_list <- speaq::detectSpecPeaks(spectra_object@.Data, ...)
   return (peaks_list)
@@ -59,6 +59,8 @@ get_peaks_list <- function(spectra_object, ...) {
 #'
 #' @importFrom reshape2 dcast melt
 #' @importFrom magrittr %>%
+#'
+#' @export
 get_spectra_at_peaks <- function(peaks_list) {
   peaks_ix  <- reshape2::melt(peaks_list)
   colnames(peaks_ix) <- c("index", "sample")
@@ -104,15 +106,21 @@ align_peaks <- function(spectra_object, peaks_list, ...) {
 #'  otu_table components of the input physeq object.
 #'
 #' @importFrom phyloseq sample_data otu_table
+#'
+#' @export
 remove_outlier_spectra <- function(physeq, thresh) {
   spectra_matrix <- spectra(physeq)@.Data
   stopifnot(!is.null(spectra_matrix))
   max_vals <- apply(spectra_matrix, 1, max)
 
   keep_samples <- rownames(spectra_matrix)[which(max_vals <= thresh)]
+
+  if(length(keep_samples) == 0) {
+    stop(sprintf("Smallest spectrum max is %s. This threshold choice would remove all samples.", min(max_vals)))
+  }
   physeq@spectra@.Data <- spectra_matrix[keep_samples, ]
   physeq@sam_data <- sample_data(physeq)[keep_samples, ]
-  physeq@otu_table <- otu_table(physeq)@.Data[, keep_samples]
+  physeq@otu_table@.Data <- physeq@otu_table@.Data[, keep_samples]
   return (physeq)
 }
 
@@ -139,6 +147,7 @@ remove_outlier_spectra <- function(physeq, thresh) {
 #'
 #' @return spectra_matrix A matrix with the same number of rows as the input,
 #'  but with filtered columns.
+#' @export
 subsample_spectra_cols <- function(spectra_matrix, subsample_frac = 1,
                                    x_min = NULL, x_max = NULL) {
   spectra_matrix <- spectra_matrix[, seq(1, ncol(spectra_matrix), by = 1 / subsample_frac)]
@@ -168,8 +177,13 @@ subsample_spectra_cols <- function(spectra_matrix, subsample_frac = 1,
 #' @param dohClusterOpts A list containing options to pass into the
 #'  dohCluster function in package speaq.
 #'
-#' @return physeq The input physeq object, with the spectra slot modified
-#'  so that all peaks are aligned.
+#' @return physeq_and_peaks A list containing the following elements
+#'    $physeq: The input physeq object, with the spectra slot modified
+#'      so that all peaks are aligned.
+#'    $peaks: A list of lists whose i^th element is a list of peaks for the
+#'      i^th sample.
+#'
+#' @export
 detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts) {
 
   # detect peaks
@@ -187,5 +201,20 @@ detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts) 
     list(spectra_object = spectra(physeq), peaks_list = peaks)
   )
   physeq@spectra <- spectra(do.call(align_peaks, dohClusterInput), peaks = FALSE)
-  return (physeq)
+  return (list(physeq = physeq, peaks = peaks))
+}
+
+# convert-to-peaks --------------------------------------------------------
+
+#' @title Shrink a Full Spectrum to Just Peaks
+#'
+#' @description Rather than working with full spectrum reads, it is often
+#'  convenient to work with a set of noteworthy peaks. In particular, we may
+#'  want to first identify peaks across samples according to some peak calling
+#'  algorithm, and then simplify the problem by setting
+#'
+#' @param physeq A phyloseqExtend object with a nonempty spectra slot.
+#' @export
+convert_to_peaks <- function(physeq, peaks_list = NULL) {
+
 }
