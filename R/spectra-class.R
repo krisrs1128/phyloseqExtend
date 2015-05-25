@@ -215,6 +215,48 @@ detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts) 
 #'
 #' @param physeq A phyloseqExtend object with a nonempty spectra slot.
 #' @export
-convert_to_peaks <- function(physeq, peaks_list = NULL) {
+convert_to_peaks <- function(physeq, binary = FALSE, peaks_list = NULL, ...) {
+  if(spectra(physeq)@peaks) {
+    warning("spectra slot already in peaks form, doing nothing.")
+    return(physeq)
+  }
 
+  # If we don't have any peaks yet, extract them
+  if(is.null(peaks_list)) {
+    peaks_list <- get_peaks_list(spectra(physeq), ...)
+    if(length(unique(unlist(peaks_list))) == 0) {
+      stop("No peaks remain with current peak detection paramters.
+            Try setting baselineThresh = smaller number in argument
+            (see speaq::detectSpecPeaks for more details).")
+    }
+  }
+
+  # extract ppms associated with peaks
+  ppms <- colnames(spectra(physeq))
+  unique_peaks <- unique(unlist(peaks_list))
+  unique_peaks <- ppms[unique_peaks]
+
+  # Create a binary matrix where 1 indicates a peak
+  peaks_matrix <- ldply(peaks_list, function(x) {
+    vec  <- setNames(rep(0, length(unique_peaks)), unique_peaks)
+    vec[ppms[x]] <- 1
+    return (vec)
+  })
+  rownames(peaks_matrix) <- rownames(spectra(physeq))
+
+  # If the user only wants binary peaks, return at this step
+  if(binary) {
+    physeq@spectra <- spectra(peaks_matrix, peaks = TRUE)
+    return (peaks_matrix)
+  }
+
+  # If we want the actual peaks heights, search for the actual peak heights
+  # in the input matrix, and substitute these
+  ones_ix <- which(peaks_matrix == 1, arr.ind = T)
+  named_ones_ix <- cbind(rownames(peaks_matrix)[ones_ix[, 1]],
+                         colnames(peaks_matrix)[ones_ix[, 2]])
+
+  peaks_matrix[ones_ix] <- spectra(physeq)@.Data[named_ones_ix]
+  physeq@spectra <- spectra(peaks_matrix, peaks = TRUE)
+  return (physeq)
 }
