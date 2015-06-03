@@ -128,7 +128,8 @@ plot_raw_spectra <- function(physeq, method = "speaq", log_scale = FALSE,
                            col = col, linetype = linetype)) +
       ggtitle(plot_title)
     if(!is.null(facet_cols)) {
-      facet_formula <- formula(paste0(facet_cols, collapse = "~"))
+      if(length(facet_cols) == 1) facet_cols <- c(facet_cols, ".")
+      facet_formula <- paste0(facet_cols, collapse = "~")
       p <- p + facet_grid(facet_formula)
     }
     if(log_scale) {
