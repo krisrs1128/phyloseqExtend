@@ -118,9 +118,9 @@ remove_outlier_spectra <- function(physeq, thresh) {
   if(length(keep_samples) == 0) {
     stop(sprintf("Smallest spectrum max is %s. This threshold choice would remove all samples.", min(max_vals)))
   }
-  physeq@spectra@.Data <- spectra_matrix[keep_samples, ]
-  physeq@sam_data <- sample_data(physeq)[keep_samples, ]
-  physeq@otu_table@.Data <- physeq@otu_table@.Data[, keep_samples]
+  physeq@spectra@.Data <- spectra_matrix[keep_samples,, drop = F]
+  physeq@sam_data <- sample_data(physeq)[keep_samples,, drop = F ]
+  physeq@otu_table@.Data <- physeq@otu_table@.Data[, keep_samples, drop = F]
   return (physeq)
 }
 
@@ -150,15 +150,15 @@ remove_outlier_spectra <- function(physeq, thresh) {
 #' @export
 subsample_spectra_cols <- function(spectra_matrix, subsample_frac = 1,
                                    x_min = NULL, x_max = NULL) {
-  spectra_matrix <- spectra_matrix[, seq(1, ncol(spectra_matrix), by = 1 / subsample_frac)]
+  spectra_matrix <- spectra_matrix[, seq(1, ncol(spectra_matrix), by = 1 / subsample_frac), drop = F]
   if(!is.null(x_min)) {
     cols_val <- as.numeric(colnames(spectra_matrix))
-    spectra_matrix <- spectra_matrix[, which(cols_val >= x_min)]
+    spectra_matrix <- spectra_matrix[, which(cols_val >= x_min), drop = F]
   }
   if(!is.null(x_max)) {
     # have to recompute cols_val, in case cols were dropped above
     cols_val <- as.numeric(colnames(spectra_matrix))
-    spectra_matrix <- spectra_matrix[, which(cols_val <= x_max)]
+    spectra_matrix <- spectra_matrix[, which(cols_val <= x_max), drop = F]
   }
   return (spectra_matrix)
 }
