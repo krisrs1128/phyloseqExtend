@@ -25,6 +25,8 @@
 #' @param facet_cols A character vector giving the column names in
 #'  sample_data(physeq) according to which to facet the plot by.
 #' @param plot_title A title to include for the figure.
+#' @param alpha The transparency parameter for the plots, when using ggplot2.
+#' @param line_thickness The thickness of the spectra lines, when using ggplot2.
 #'
 #' @return If "ggplot2" is used, then return the ggplot2 object containing the
 #'  plot. Otherwise does not return anything.
@@ -33,16 +35,18 @@
 plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
                           subsample_frac = 1, x_min = NULL, x_max = NULL,
                           col = NULL, linetype = NULL, facet_cols = NULL,
-                          plot_title = NULL, ...) {
+                          plot_title = NULL, alpha = 1, line_thickness = 1,
+                          ...) {
   method <- match.arg(method, choices = c("speaq", "ggplot2"))
   stopifnot(!is.null(spectra(physeq)))
   if(spectra(physeq)@peaks) {
     p <- plot_spectra_peaks(physeq, log_scale, subsample_frac, x_min,
-                            x_max, col, linetype, facet_cols, plot_title, ...)
+                            x_max, col, linetype, facet_cols, plot_title,
+                            alpha, line_thickness, ...)
   } else {
     p <- plot_raw_spectra(physeq, method, log_scale, subsample_frac,
                           x_min, x_max, col, linetype, facet_cols,
-                          plot_title, ...)
+                          plot_title, alpha, line_thickness, ...)
   }
   if(!is.null(p)) {
     return (p)
@@ -74,6 +78,8 @@ plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
 #' @param facet_cols A character vector giving the column names in
 #'  sample_data(physeq) according to which to facet the plot by.
 #' @param plot_title A title to include for the figure.
+#' @param alpha The transparency parameter for the plots, when using ggplot2.
+#' @param line_thickness The thickness of the spectra lines, when using ggplot2.
 #'
 #' @return p The ggplot object containing plots of the raw spectra, with
 #'  color / linetype / faceting annotation as desired.
@@ -87,7 +93,7 @@ plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
 plot_raw_spectra <- function(physeq, method = "speaq", log_scale = FALSE,
                              subsample_frac = 1, x_min = NULL, x_max = NULL,
                              col = NULL, linetype = NULL, facet_cols = NULL,
-                             plot_title = NULL, ...) {
+                             plot_title = NULL, alpha = 1, line_thickness = 1) {
 
   # Extract spectra
   spectra_matrix <- spectra(physeq)@.Data
@@ -125,7 +131,8 @@ plot_raw_spectra <- function(physeq, method = "speaq", log_scale = FALSE,
     # Construct the desired plot
     p <- ggplot(spectra_dat) +
       geom_line(aes_string(x = "index", y = "intensity", group = "id",
-                           col = col, linetype = linetype)) +
+                           col = col, linetype = linetype),
+                alpha = alpha, size = line_thickness) +
       ggtitle(plot_title)
     if(!is.null(facet_cols)) {
       if(length(facet_cols) == 1) facet_cols <- c(facet_cols, ".")
@@ -203,13 +210,15 @@ add_plot_layers <- function(p, plot_title = NULL, facet_cols = NULL,
 #' @param facet_cols A character vector giving the column names in
 #'  sample_data(physeq) according to which to facet the plot by.
 #' @param plot_title A title to include for the figure.
+#' @param alpha The transparency parameter for the plots, when using ggplot2.
+#' @param line_thickness The thickness of the spectra lines, when using ggplot2.
 #'
 #' @return p The ggplot object containing plots of the raw spectra, with
 #'  color / linetype / faceting annotation as desired.
 plot_spectra_peaks <- function(physeq, log_scale = FALSE, subsample_frac = 1,
                                x_min = NULL, x_max = NULL, col = NULL,
                                linetype = NULL, facet_cols = NULL,
-                               plot_title = NULL, ...) {
+                               plot_title = NULL, alpha = 1, line_thickness = 1, ...) {
 
   # Extract spectra
   spectra_matrix <- spectra(physeq)@.Data
@@ -235,7 +244,7 @@ plot_spectra_peaks <- function(physeq, log_scale = FALSE, subsample_frac = 1,
   # construct the plot
   p <- ggplot(spectra_dat) +
     geom_segment(aes_string(x = "index", y = "0", xend = "index", yend = "intensity",
-                     col = col, linetype = linetype)) +
+                     col = col, linetype = linetype), alpha = alpha, size = line_thickness) +
     scale_y_continuous("intensity")
   p <- add_plot_layers(p, plot_title, facet_cols, log_scale)
   return (p)
