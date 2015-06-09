@@ -32,18 +32,19 @@
 #'  plot. Otherwise does not return anything.
 #'
 #' @export
-plot_spectra  <- function(physeq, method = "speaq", log_scale = FALSE,
-                          subsample_frac = 1, x_min = NULL, x_max = NULL,
-                          col = NULL, linetype = NULL, facet_cols = NULL,
-                          plot_title = NULL, alpha = 1, line_thickness = 1,
-                          ...) {
+plot_spectra  <- function(physeq, method = "speaq", plot_type = "specmat",
+                          log_scale = FALSE, subsample_frac = 1, x_min = NULL,
+                          x_max = NULL, col = NULL, linetype = NULL,
+                          facet_cols = NULL, plot_title = NULL, alpha = 1,
+                          line_thickness = 1, ...) {
   method <- match.arg(method, choices = c("speaq", "ggplot2"))
+  plot_type <- match.arg(plot_type, choices = c("specmat", "peakmat"))
   stopifnot(!is.null(spectra(physeq)))
-  if(spectra(physeq)@peaks) {
+  if(plot_type == "specmat") {
     p <- plot_spectra_peaks(physeq, log_scale, subsample_frac, x_min,
                             x_max, col, linetype, facet_cols, plot_title,
                             alpha, line_thickness, ...)
-  } else {
+  } else if(plot_type == "peakmat") {
     p <- plot_raw_spectra(physeq, method, log_scale, subsample_frac,
                           x_min, x_max, col, linetype, facet_cols,
                           plot_title, alpha, line_thickness, ...)
@@ -96,7 +97,7 @@ plot_raw_spectra <- function(physeq, method = "speaq", log_scale = FALSE,
                              plot_title = NULL, alpha = 1, line_thickness = 1) {
 
   # Extract spectra
-  spectra_matrix <- spectra(physeq)@.Data
+  spectra_matrix <- spectra(physeq)@specmat@.Data
   spectra_matrix <- subsample_spectra_cols(spectra_matrix, subsample_frac, x_min, x_max)
 
   # Extract features to annotate with
@@ -221,7 +222,7 @@ plot_spectra_peaks <- function(physeq, log_scale = FALSE, subsample_frac = 1,
                                plot_title = NULL, alpha = 1, line_thickness = 1, ...) {
 
   # Extract spectra
-  spectra_matrix <- spectra(physeq)@.Data
+  spectra_matrix <- spectra(physeq)@peakmat@.Data
   spectra_matrix <- subsample_spectra_cols(spectra_matrix, subsample_frac, x_min, x_max)
 
   # Extract features to annotate with
