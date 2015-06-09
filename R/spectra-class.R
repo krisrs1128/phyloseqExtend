@@ -3,16 +3,13 @@
 #'
 #' @param spectra_matrix An object of class matrix, containing the spectral
 #'  samples as rows.
-#' @param peaks A logical indicating whether the matrix columns corresponds to
-#'  wavelengths (FALSE, for raw spectra) or just peaks (TRUE, for spectra
-#'  that have been processed). Defaults to FALSE.
 #'
 #' @return spectra An object of class spectra, containing the input spectra
 #' matrix as the main data component.
 #'
 #' @docType methods
 #' @export
-setGeneric("spectra", function(object, peaks = FALSE) {
+setGeneric("spectra", function(object) {
   standardGeneric("spectra")
 })
 
@@ -25,14 +22,22 @@ setMethod("spectra", "phyloseqExtend", function(object) {
   return (spectra_object)
 })
 
-# If a matrix is input, create a new spectra object from that matrix
-setMethod("spectra", "matrix", function(object, peaks = FALSE) {
-  new("spectra", object, peaks = peaks)
+# If a single matrix is input, assume that matrix is the specmat
+setMethod("spectra", "matrix", function(object) {
+  new("spectra", specmat = object)
 })
 
-# If a data.frame or data.table is input, convert to a matrix
-setMethod("spectra", "data.frame", function(object, peaks = FALSE) {
-  spectra(as(object, "matrix"), peaks = peaks)
+# If a data.frame or data.table is input, convert to a matrix and
+# assume it is a specmat
+setMethod("spectra", "data.frame", function(object) {
+  spectra(as(object, "matrix"))
+})
+
+# If a list is input, check the names to determine the appropriate slots
+setMethod("spectra", "list", function(object) {
+  new("spectra", specmat = as.matrix(object[["specmat"]]),
+      peakmat = as.matrix(object[["peakmat"]]),
+      adjmat = as.matrix(object[["adjmat"]]))
 })
 
 # call-peaks --------------------------------------------------------------
@@ -76,7 +81,6 @@ get_spectra_at_peaks <- function(peaks_list) {
   return (peaks)
 }
 
-
 # wrap-peak-alignment -----------------------------------------------------
 
 #' @title Wrapper for dohCluster in speaq
@@ -89,7 +93,7 @@ get_spectra_at_peaks <- function(peaks_list) {
 #' unique peak in the i^th unique sample.
 align_peaks <- function(spectra_object, peaks_list, ...) {
   ref_peak <- speaq::findRef(peaks_list)
-  aligned_peaks <- speaq::dohCluster(spectra_object@.Data,
+  aligned_peaks <- speaq::dohCluster(spectra_object@specmat@.Data,
                                      peakList = peaks_list,
                                      refInd = ref_peak$refInd, ...)
   return (aligned_peaks)
@@ -109,7 +113,7 @@ align_peaks <- function(spectra_object, peaks_list, ...) {
 #'
 #' @export
 remove_outlier_spectra <- function(physeq, thresh) {
-  spectra_matrix <- spectra(physeq)@.Data
+  spectra_matrix <- spectra(physeq)@specmat@.Data
   stopifnot(!is.null(spectra_matrix))
   max_vals <- apply(spectra_matrix, 1, max)
 
@@ -118,7 +122,7 @@ remove_outlier_spectra <- function(physeq, thresh) {
   if(length(keep_samples) == 0) {
     stop(sprintf("Smallest spectrum max is %s. This threshold choice would remove all samples.", min(max_vals)))
   }
-  physeq@spectra@.Data <- spectra_matrix[keep_samples,, drop = F]
+  physeq@spectra@specmat@.Data <- spectra_matrix[keep_samples,, drop = F]
   physeq@sam_data <- sample_data(physeq)[keep_samples,, drop = F ]
   physeq@otu_table@.Data <- physeq@otu_table@.Data[, keep_samples, drop = F]
   return (physeq)

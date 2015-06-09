@@ -1,11 +1,14 @@
 # spectra -----------------------------------------------------------------
 #' @title The S4 class for storing metabolomic information
-#' @description A matrix containing either raw spectra measurements or
-#'    processed peaks indicators or heights.
+#' @description A class containing 1) a matrix with the n spectra samples
+#'  as rows 2) a matrix with n samples as rows and with columns giving the
+#'  union of all detected peaks, and 3) the adjacency matrix for samples
+#'  using the coocurrence of peaks.
+#'
 #' @name spectra-class
 #' @exportClass spectra
-setClass("spectra", representation(peaks = "logical"),
-         contains = "matrix")
+setClass("spectra", slots = list(specmat = "matrix", peakmat = "matrix",
+                                 adjmat = "matrix"))
 
 # null-unions -------------------------------------------------------------
 #' @title spectra S4 class with placeholder
