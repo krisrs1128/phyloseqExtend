@@ -40,6 +40,21 @@ setMethod("spectra", "list", function(object) {
       adjmat = as.matrix(object[["adjmat"]]))
 })
 
+# validity ----------------------------------------------------------------
+
+setValidity("spectra",
+            function(object) {
+              nspec <- nrow(object@specmat)
+              npeak <- nrow(object@peakmat)
+              if(min(nspec, npeak) > 0) {
+                if(nspec != npeak) {
+                  "Number of spectra samples not equal to number of peak samples."
+                }
+              } else {
+                TRUE
+              }
+            })
+
 # call-peaks --------------------------------------------------------------
 #' @title Wrapper for speaq::detectSpecPeaks
 #'
