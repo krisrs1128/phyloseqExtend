@@ -60,7 +60,7 @@ setMethod("spectra", "data.frame", function(object) {
 
 # If a list is input, check the names to determine the appropriate slots
 setMethod("spectra", "list", function(object) {
-  new("spectra", specmat = as.matrix(object[["specmat"]]),
+  spectra_obj <- new("spectra", specmat = as.matrix(object[["specmat"]]),
       peakmat = as.matrix(object[["peakmat"]]),
       adjmat = as.matrix(object[["adjmat"]]))
   spectra_obj <- add_dim_names(spectra_obj)
@@ -77,7 +77,7 @@ setValidity("spectra",
                 if(nspec != npeak) {
                   "Number of spectra samples not equal to number of peak samples."
                 }
-                if(rownames(object@specmat) != rownames(object@peakmat)) {
+                if(!identical(rownames(object@specmat), rownames(object@peakmat))) {
                   "Spectra row names are inconsistent"
                 }
               } else {
@@ -118,13 +118,13 @@ setMethod("prune_samples", signature("character", "spectra"), function(samples, 
 # call-peaks --------------------------------------------------------------
 #' @title Wrapper for speaq::detectSpecPeaks
 #'
-#' @param spectra_object A spectra object containing raw spectra reads
+#' @param spectra_object A spectra object with a nonempty @specmat slot
 #' @return peaks_list A list whose i^th element contains the indices
 #' of peaks in the i^th sample
 #' @importFrom speaq detectSpecPeaks
 #' @export
 get_peaks_list <- function(spectra_object, ...) {
-  peaks_list <- speaq::detectSpecPeaks(spectra_object@.Data, ...)
+  peaks_list <- speaq::detectSpecPeaks(spectra_object@specmat, ...)
   return (peaks_list)
 }
 
@@ -141,17 +141,17 @@ get_peaks_list <- function(spectra_object, ...) {
 #' @importFrom magrittr %>%
 #'
 #' @export
-get_spectra_at_peaks <- function(peaks_list) {
+get_spectra_at_peaks <- function(specmat, peaks_list) {
   peaks_ix  <- reshape2::melt(peaks_list)
   colnames(peaks_ix) <- c("index", "sample")
   peaks <- peaks_ix %>%
-    cbind(value = t(spectra)[as.matrix(peaks_ix)]) %>%
+    cbind(value = t(specmat)[as.matrix(peaks_ix)]) %>%
     reshape2::dcast(sample ~ index, fill = 0)
 
   # Give appropriate sample and spectra names
   rownames(peaks) <- peaks$sample
   peaks$sample <- NULL
-  colnames(peaks) <- colnames(spectra)[as.numeric(colnames(peaks))]
+  colnames(peaks) <- colnames(specmat)[as.numeric(colnames(peaks))]
   peaks <- as.matrix(peaks)
   return (peaks)
 }
@@ -160,7 +160,7 @@ get_spectra_at_peaks <- function(peaks_list) {
 
 #' @title Wrapper for dohCluster in speaq
 #'
-#' @param spectra_object A spectra object containing raw spectra reads
+#' @param spectra_object A spectra object with a nonempty specmat slot.
 #' @param peaks_list A list whose i^th element contains the indices
 #' of peaks in the i^th sample
 #'
@@ -168,7 +168,7 @@ get_spectra_at_peaks <- function(peaks_list) {
 #' unique peak in the i^th unique sample.
 align_peaks <- function(spectra_object, peaks_list, ...) {
   ref_peak <- speaq::findRef(peaks_list)
-  aligned_peaks <- speaq::dohCluster(spectra_object@specmat@.Data,
+  aligned_peaks <- speaq::dohCluster(spectra_object@specmat,
                                      peakList = peaks_list,
                                      refInd = ref_peak$refInd, ...)
   return (aligned_peaks)
@@ -188,7 +188,7 @@ align_peaks <- function(spectra_object, peaks_list, ...) {
 #'
 #' @export
 remove_outlier_spectra <- function(physeq, thresh) {
-  spectra_matrix <- spectra(physeq)@specmat@.Data
+  spectra_matrix <- spectra(physeq)@specmat
   stopifnot(!is.null(spectra_matrix))
   max_vals <- apply(spectra_matrix, 1, max)
 
@@ -197,9 +197,13 @@ remove_outlier_spectra <- function(physeq, thresh) {
   if(length(keep_samples) == 0) {
     stop(sprintf("Smallest spectrum max is %s. This threshold choice would remove all samples.", min(max_vals)))
   }
-  physeq@spectra@specmat@.Data <- spectra_matrix[keep_samples,, drop = F]
+  physeq@spectra <- subset_samples_spectra(keep_samples, physeq@spectra)
   physeq@sam_data <- sample_data(physeq)[keep_samples,, drop = F ]
-  physeq@otu_table@.Data <- physeq@otu_table@.Data[, keep_samples, drop = F]
+  if(physeq@otu_table@taxa_are_rows) {
+    physeq@otu_table@.Data <- physeq@otu_table@.Data[, keep_samples, drop = F]
+  } else {
+    physeq@otu_table@.Data <- physeq@otu_table@.Data[keep_samples, , drop = F]
+  }
   return (physeq)
 }
 
@@ -255,15 +259,20 @@ subsample_spectra_cols <- function(spectra_matrix, subsample_frac = 1,
 #'  detectSpecPeaks function in package speaq.
 #' @param dohClusterOpts A list containing options to pass into the
 #'  dohCluster function in package speaq.
+#' @param binary If TRUE, returns 0/1 for whether there is a peak in the sample
+#'  at a particular position.
 #'
-#' @return physeq_and_peaks A list containing the following elements
-#'    $physeq: The input physeq object, with the spectra slot modified
-#'      so that all peaks are aligned.
-#'    $peaks: A list of lists whose i^th element is a list of peaks for the
-#'      i^th sample.
-#'
+#' @return physeq The input physeq object, with the specmat element of the
+#'  spectra slot modified so that all peaks are aligned, and with the peakmat
+#'  element included.
 #' @export
-detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts) {
+detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts,
+                                   binary = F) {
+
+  # warning in case there are peaks
+  if(!is.null(spectra(physeq)@peakmat)) {
+    warning("Overwriting existing peakmat slot.")
+  }
 
   # detect peaks
   detectSpecPeaksOpts <- modifyList(
@@ -279,11 +288,24 @@ detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts) 
     dohClusterOpts,
     list(spectra_object = spectra(physeq), peaks_list = peaks)
   )
-  physeq@spectra <- spectra(do.call(align_peaks, dohClusterInput), peaks = FALSE)
-  return (list(physeq = physeq, peaks = peaks))
+
+  # combine results
+  specmat <- do.call(align_peaks, dohClusterInput)
+  peakmat = get_spectra_at_peaks(spectra(physeq)@specmat, peaks)
+
+  if(binary) {
+    peakmat[peakmat > 0] <- 1
+  }
+
+  rownames(peakmat) <- rownames(specmat)
+  result_list <- list(specmat = specmat,
+                      peakmat = peakmat,
+                      adjmat = spectra(physeq)@adjmat)
+  physeq@spectra <- spectra(result_list)
+  return (physeq)
 }
 
-# convert-to-peaks --------------------------------------------------------
+# input_peak_slot ---------------------------------------------------------
 
 #' @title Shrink a Full Spectrum to Just Peaks
 #'
@@ -293,49 +315,33 @@ detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts) 
 #'  algorithm, and then simplify the problem by setting
 #'
 #' @param physeq A phyloseqExtend object with a nonempty spectra slot.
+#' @param peakmat A matrix whose rows correspond to samples in the specmat and
+#'  whose columns index unique samples in the data.
 #' @export
-convert_to_peaks <- function(physeq, binary = FALSE, peaks_list = NULL, ...) {
-  if(spectra(physeq)@peaks) {
-    warning("spectra slot already in peaks form, doing nothing.")
-    return(physeq)
-  }
+input_peaks <- function(physeq, binary = FALSE, peakmat = NULL, ...) {
 
   # If we don't have any peaks yet, extract them
-  if(is.null(peaks_list)) {
+  if(is.null(peakmat)) {
     peaks_list <- get_peaks_list(spectra(physeq), ...)
     if(length(unique(unlist(peaks_list))) == 0) {
       stop("No peaks remain with current peak detection paramters.
-            Try setting baselineThresh = smaller number in argument
-            (see speaq::detectSpecPeaks for more details).")
+           Try setting baselineThresh = smaller number in argument
+           (see speaq::detectSpecPeaks for more details).")
     }
+    peakmat <- get_spectra_at_peaks(spectra(physeq)@specmat, peaks_list)
   }
 
   # extract ppms associated with peaks
-  ppms <- colnames(spectra(physeq))
-  unique_peaks <- unique(unlist(peaks_list))
-  unique_peaks <- ppms[unique_peaks]
+  ppms <- colnames(spectra(physeq)@specmat)
+  rownames(peakmat) <- rownames(spectra(physeq)@specmat)
 
-  # Create a binary matrix where 1 indicates a peak
-  peaks_matrix <- ldply(peaks_list, function(x) {
-    vec  <- setNames(rep(0, length(unique_peaks)), unique_peaks)
-    vec[ppms[x]] <- 1
-    return (vec)
-  })
-  rownames(peaks_matrix) <- rownames(spectra(physeq))
-
-  # If the user only wants binary peaks, return at this step
   if(binary) {
-    physeq@spectra <- spectra(peaks_matrix, peaks = TRUE)
-    return (physeq)
+    peakmat[peakmat > 0] <- 1
   }
 
-  # If we want the actual peaks heights, search for the actual peak heights
-  # in the input matrix, and substitute these
-  ones_ix <- which(peaks_matrix == 1, arr.ind = T)
-  named_ones_ix <- cbind(rownames(peaks_matrix)[ones_ix[, 1]],
-                         colnames(peaks_matrix)[ones_ix[, 2]])
-
-  peaks_matrix[ones_ix] <- spectra(physeq)@.Data[named_ones_ix]
-  physeq@spectra <- spectra(peaks_matrix, peaks = TRUE)
+  result_list <- list(specmat = specmat,
+                      peakmat = peakmat,
+                      adjmat = spectra(physeq)@adjmat)
+  physeq@spectra <- spectra(result_list)
   return (physeq)
 }
