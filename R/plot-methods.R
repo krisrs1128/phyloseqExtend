@@ -40,11 +40,11 @@ plot_spectra  <- function(physeq, method = "speaq", plot_type = "specmat",
   method <- match.arg(method, choices = c("speaq", "ggplot2"))
   plot_type <- match.arg(plot_type, choices = c("specmat", "peakmat"))
   stopifnot(!is.null(spectra(physeq)))
-  if(plot_type == "specmat") {
+  if(plot_type == "peakmat") {
     p <- plot_spectra_peaks(physeq, log_scale, subsample_frac, x_min,
                             x_max, col, linetype, facet_cols, plot_title,
                             alpha, line_thickness, ...)
-  } else if(plot_type == "peakmat") {
+  } else if(plot_type == "specmat") {
     p <- plot_raw_spectra(physeq, method, log_scale, subsample_frac,
                           x_min, x_max, col, linetype, facet_cols,
                           plot_title, alpha, line_thickness, ...)
