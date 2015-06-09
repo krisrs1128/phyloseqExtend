@@ -4,9 +4,10 @@
 \alias{plot_spectra}
 \title{Plot Spectra Intensities}
 \usage{
-plot_spectra(physeq, method = "speaq", log_scale = FALSE,
-  subsample_frac = 1, x_min = NULL, x_max = NULL, col = NULL,
-  linetype = NULL, plot_title = NULL, ...)
+plot_spectra(physeq, method = "speaq", plot_type = "specmat",
+  log_scale = FALSE, subsample_frac = 1, x_min = NULL, x_max = NULL,
+  col = NULL, linetype = NULL, facet_cols = NULL, plot_title = NULL,
+  alpha = 1, line_thickness = 1, ...)
 }
 \arguments{
 \item{physeq}{A phyloseq object containing the spectrum to plot}
@@ -22,10 +23,25 @@ plot_spectra(physeq, method = "speaq", log_scale = FALSE,
 \item{x_min}{What is the minimum index to display?}
 
 \item{x_max}{What is the maximum index to display?}
+
+\item{col}{A string giving a column name in sample_data(physeq) according
+to which we will color the spectra.}
+
+\item{linetype}{A string giving a column name in sample_data(physeq)
+according to which we will modify the spectra linetypes.}
+
+\item{facet_cols}{A character vector giving the column names in
+sample_data(physeq) according to which to facet the plot by.}
+
+\item{plot_title}{A title to include for the figure.}
+
+\item{alpha}{The transparency parameter for the plots, when using ggplot2.}
+
+\item{line_thickness}{The thickness of the spectra lines, when using ggplot2.}
 }
 \value{
 If "ggplot2" is used, then return the ggplot2 object containing the
- plot. Otherwise returns null.
+ plot. Otherwise does not return anything.
 }
 \description{
 If spectra(physeq)[["peaks"]] is FALSE, then this will plot the

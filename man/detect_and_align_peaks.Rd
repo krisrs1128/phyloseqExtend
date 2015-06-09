@@ -16,11 +16,9 @@ detectSpecPeaks function in package speaq.}
  dohCluster function in package speaq.}
 }
 \value{
-physeq_and_peaks A list containing the following elements
-   $physeq: The input physeq object, with the spectra slot modified
-     so that all peaks are aligned.
-   $peaks: A list of lists whose i^th element is a list of peaks for the
-     i^th sample.
+physeq The input physeq object, with the specmat element of the
+ spectra slot modified so that all peaks are aligned, and with the peakmat
+ element included.
 }
 \description{
 A common preprocessing step in work with spectra is peak

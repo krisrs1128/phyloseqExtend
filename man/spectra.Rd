@@ -5,15 +5,11 @@
 \alias{spectra}
 \title{Build or access an object of class spectra}
 \usage{
-spectra(object, peaks = FALSE)
+spectra(object)
 }
 \arguments{
-\item{peaks}{A logical indicating whether the matrix columns corresponds to
- wavelengths (FALSE, for raw spectra) or just peaks (TRUE, for spectra
- that have been processed). Defaults to FALSE.}
-
 \item{spectra_matrix}{An object of class matrix, containing the spectral
-samples as rows.}
+ samples as rows.}
 }
 \value{
 spectra An object of class spectra, containing the input spectra
