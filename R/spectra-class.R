@@ -118,7 +118,7 @@ setMethod("prune_samples", signature("character", "spectra"), function(samples, 
 # call-peaks --------------------------------------------------------------
 #' @title Wrapper for speaq::detectSpecPeaks
 #'
-#' @param spectra_object A spectra object with a nonempty @specmat slot
+#' @param spectra_object A spectra object with a nonempty specmat slot
 #' @return peaks_list A list whose i^th element contains the indices
 #' of peaks in the i^th sample
 #' @importFrom speaq detectSpecPeaks
