@@ -7,7 +7,7 @@
 #' @importFrom speaq detectSpecPeaks
 #' @export
 get_peaks_list <- function(spectra_object, ...) {
-  peaks_list <- speaq::detectSpecPeaks(spectra_object@spectra@specmat, ...)
+  peaks_list <- speaq::detectSpecPeaks(spectra_object@specmat, ...)
   return (peaks_list)
 }
 
@@ -147,7 +147,6 @@ subsample_spectra_cols <- function(spectra_matrix, subsample_frac = 1,
 #' @export
 detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts,
                                    binary = F) {
-
   # warning in case there are peaks
   if(!is.null(spectra(physeq)@peakmat)) {
     warning("Overwriting existing peakmat slot.")
@@ -170,7 +169,7 @@ detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts,
 
   # combine results
   specmat <- do.call(align_peaks, dohClusterInput)
-  peakmat = get_spectra_at_peaks(spectra(physeq)@specmat, peaks)
+  peakmat <- get_spectra_at_peaks(spectra(physeq)@specmat, peaks)
 
   if(binary) {
     peakmat[peakmat > 0] <- 1
