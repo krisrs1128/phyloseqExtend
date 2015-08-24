@@ -113,7 +113,10 @@ remove_outlier_spectra <- function(physeq, thresh) {
 #' @export
 subsample_spectra_cols <- function(spectra_matrix, subsample_frac = 1,
                                    x_min = NULL, x_max = NULL) {
-  spectra_matrix <- spectra_matrix[, seq(1, ncol(spectra_matrix), by = 1 / subsample_frac), drop = F]
+  keep_ix <- seq(1, ncol(spectra_matrix), by = 1 / subsample_frac)
+  spectra_names <- colnames(spectra_matrix)
+  spectra_matrix <- spectra_matrix[, keep_ix, drop = F]
+  colnames(spectra_matrix) <- spectra_names[keep_ix]
   if(!is.null(x_min)) {
     cols_val <- as.numeric(colnames(spectra_matrix))
     spectra_matrix <- spectra_matrix[, which(cols_val >= x_min), drop = F]
