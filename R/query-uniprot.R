@@ -166,6 +166,7 @@ get_uniprot_info <- function(id) {
   uni_xml <- read_html(getURL(paste0(uni, "/", id, ".xml")))
 
   result <- list()
+  result$uniprot_id <- id
   result$lineage <- uni_xml %>% html_nodes("taxon") %>% html_text
   result$gene <- get_gene(uni_xml)
   result$protein <- get_protein(uni_xml)
