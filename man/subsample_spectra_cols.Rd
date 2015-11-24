@@ -12,8 +12,8 @@ subsample_spectra_cols(spectra_matrix, subsample_frac = 1, x_min = NULL,
 samples as rows.}
 
 \item{subsample_frac}{We will only plot ever the value at every
- 1 / subsample_frac indices. This can accelerate plotting in the case that
- the spectrum is very long, but can lead to missed peaks.}
+1 / subsample_frac indices. This can accelerate plotting in the case that
+the spectrum is very long, but can lead to missed peaks.}
 
 \item{x_min}{What is the minimum index to display?}
 

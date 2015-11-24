@@ -9,7 +9,7 @@ spectra(object)
 }
 \arguments{
 \item{spectra_matrix}{An object of class matrix, containing the spectral
- samples as rows.}
+samples as rows.}
 }
 \value{
 spectra An object of class spectra, containing the input spectra

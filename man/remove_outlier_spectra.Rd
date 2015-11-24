@@ -12,8 +12,8 @@ remove_outlier_spectra(physeq, thresh)
 \item{thresh}{Any spectra with maximum value above thresh will be discarded.}
 }
 \value{
-None. Removes the outlier samples from the spectra, sample_data and
- otu_table components of the input physeq object.
+physeq  Version of physeq object with outlier samples removed (across
+all components in the input physeq object).
 }
 \description{
 Remove Outliers

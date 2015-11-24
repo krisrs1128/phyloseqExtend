@@ -12,7 +12,7 @@ of peaks in the i^th sample}
 }
 \value{
 peaks A matrix containing spectra values filtered to samples
- and measurement indices containining peaks.
+and measurement indices containining peaks.
 }
 \description{
 Extract Spectra at Peak Positions
