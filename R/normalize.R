@@ -18,5 +18,6 @@
 rpkg_from_rpkm <- function(rpkm, lib, ags) {
   pk <- rpkm %*% diag(lib) / 1e6
   rpkg <- pk %*% diag(lib / ags)
-  return (rpkg)
+  colnames(rpkg) <- colnames(rpkm)
+  rpkg
 }
