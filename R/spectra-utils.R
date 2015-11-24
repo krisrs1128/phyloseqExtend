@@ -5,81 +5,67 @@
 
 # align-and-detect -------------------------------------------------------------
 
-#' @title Wrapper for speaq::detectSpecPeaks
-#' @param spectra_object A spectra object with a nonempty specmat slot
+#' @title Wrapper for MALDIquant detectPeaks
+#' @param spectra_object A spectra object with a nonempty specmat slot. If this
+#' slot has column names, they will be used in the peak detection step.
+#' Otherwise, placeholder intensities will be used.
+#' @param ... Additional options to detecPeaks in MALDIquant.
 #' @return peaks_list A list whose i^th element contains the indices
 #' of peaks in the i^th sample
-#' @importFrom speaq detectSpecPeaks
+#' @importFrom MALDIquant createMassSpectrum detectPeaks
 #' @export
-get_peaks_list <- function(spectra_object, ...) {
-  detectSpecPeaks(spectra_object@specmat, ...)
+get_peaks_list <- function(specmat, peak_opts) {
+  ppm <- get_ppm(specmat)
+  apply(specmat, 1, function(x) {
+    ppm_vals <- detectPeaks(createMassSpectrum(ppm, x))@mass
+    which(ppm %in% ppm_vals)
+  })
 }
 
-#' @title Wrapper for dohCluster in speaq
+#' @title Get ppm values associated with a spectra matrix
+#' @param specmat A matrix whose column names will be used to derive ppms
+#' @export
+get_ppm <- function(specmat) {
+  if(is.null(colnames(specmat))) {
+    ppm <- seq_len(ncol(specmat))
+    warning("Using default ppm values")
+  } else {
+    ppm <- as.numeric(colnames(specmat))
+  }
+  ppm
+}
+
+#' @title Wrapper for removeBaseline and alignSpectra in MALDIquant
 #' @param spectra_object A spectra object with a nonempty specmat slot.
-#' @param peaks_list A list whose i^th element contains the indices
-#' of peaks in the i^th sample
-#' @importFrom speaq findRef dohCluster
+#' @param baseline_opts A list of arguments to pass to removeBaseline() in
+#' MALDIquant.
+#' @importFrom MALDIquant createMassSpectrum removeBaseline
+#' @return baselined_peaks A matrix whose ij^th element is the value of the j^th
+#' unique peak in the i^th unique sample.
+remove_baseline <- function(specmat, baseline_opts = list()) {
+  ppms <- get_ppm(specmat)
+  nmr_list <- apply(specmat, 1, function(x) createMassSpectrum(ppms, x))
+  nmr_list <- do.call(removeBaseline, c(list(object = nmr_list), baseline_opts))
+  baselined_peaks <- do.call(rbind, lapply(nmr_list, function(x) x@intensity))
+  rownames(baselined_peaks) <- rownames(baselined_peaks)
+  baselined_peaks
+}
+
+#' @title Wrapper for removeBaseline and alignSpectra in MALDIquant
+#' @param spectra_object A spectra object with a nonempty specmat slot.
+#' @param baseline_opts A list of arguments to pass to removeBaseline() in
+#' MALDIquant.
+#' @param align_opts A list of arguments to pass to alignSpectra in MALDIquant.
+#' @importFrom MALDIquant createMassSpectrum alignSpectra
 #' @return aligned_peaks A matrix whose ij^th element is the value of the j^th
 #' unique peak in the i^th unique sample.
-align_peaks <- function(spectra_object, peaks_list, ...) {
-  ref_peak <- findRef(peaks_list)
-  dohCluster(spectra_object@specmat,
-             peakList = peaks_list,
-             refInd = ref_peak$refInd, ...)
-}
-
-#' @title Wrapper for peak detection and alignment
-#' @description A common preprocessing step in work with spectra is peak
-#'  alignment. Here, we wrap the peak detection, reference finding, and
-#'  hierarchical clustering peak alignment steps from the speaq package.
-#' @param physeq A phyloseqExtend object with a nonempty spectra slot
-#' @param detectSpecPeaksOpts A list containing options to pass into the
-#'  detectSpecPeaks function in package speaq.
-#' @param dohClusterOpts A list containing options to pass into the
-#'  dohCluster function in package speaq.
-#' @param binary If TRUE, returns 0/1 for whether there is a peak in the sample
-#'  at a particular position.
-#' @return physeq The input physeq object, with the specmat element of the
-#'  spectra slot modified so that all peaks are aligned, and with the peakmat
-#'  element included.
-#' @export
-detect_and_align_peaks <- function(physeq, detectSpecPeaksOpts, dohClusterOpts,
-                                   binary = F) {
-  # warning in case there are peaks
-  if(!is.null(spectra(physeq)@peakmat)) {
-    warning("Overwriting existing peakmat slot.")
-  }
-
-  # detect peaks
-  detectSpecPeaksOpts <- modifyList(
-    detectSpecPeaksOpts,
-    list(spectra_object = spectra(physeq))
-  )
-  message("Detecting peaks...")
-  peaks <- do.call(get_peaks_list, detectSpecPeaksOpts)
-
-  # align peaks
-  message("Aligning peaks to reference...")
-  dohClusterInput <- modifyList(
-    dohClusterOpts,
-    list(spectra_object = spectra(physeq), peaks_list = peaks)
-  )
-
-  # combine results
-  specmat <- do.call(align_peaks, dohClusterInput)
-  peakmat <- get_spectra_at_peaks(spectra(physeq)@specmat, peaks)
-
-  if(binary) {
-    peakmat[peakmat > 0] <- 1
-  }
-
-  rownames(peakmat) <- rownames(specmat)
-  result_list <- list(specmat = specmat,
-                      peakmat = peakmat,
-                      adjmat = spectra(physeq)@adjmat)
-  physeq@spectra <- spectra(result_list)
-  physeq
+align_spectra <- function(specmat, align_opts = list()) {
+  ppms <- get_ppm(specmat)
+  nmr_list <- apply(specmat, 1, function(x) createMassSpectrum(ppms, x))
+  nmr_list <- do.call(alignSpectra, c(list(spectra = nmr_list), align_opts))
+  aligned_peaks <- do.call(rbind, lapply(nmr_list, function(x) x@intensity))
+  rownames(aligned_peaks) <- rownames(aligned_peaks)
+  aligned_peaks
 }
 
 # outliers ---------------------------------------------------------------------
@@ -111,15 +97,19 @@ remove_outlier_spectra <- function(physeq, thresh) {
 }
 
 # subsampling ------------------------------------------------------------------
-#' @title Extract Spectra at Peak Positions
-#' @param peaks_list A list whose i^th element contains the indices
-#' of peaks in the i^th sample
-#' @return peaks A matrix containing spectra values filtered to samples
-#'  and measurement indices containining peaks.
+#' @title Extract Spectra at Peak Positions, with zeros for non-peaks
+#' @param specmat A spectra matrix with samples on rows.
+#' @param peaks_list A list whose i^th element contains the indices of peaks in
+#' the i^th sample
+#' @param binary Should the actual spectrum intensity be returned, or just an
+#' indicator of whether the position was a peak?
+#' @return peaks A matrix containing spectra values filtered to samples and
+#' measurement indices containining peaks, and placing zeros if a
+#' measurement was not called a peak.
 #' @importFrom data.table dcast melt
 #' @importFrom magrittr %>%
 #' @export
-get_spectra_at_peaks <- function(specmat, peaks_list) {
+get_spectra_at_peaks_zeros <- function(specmat, peaks_list, binary = FALSE) {
   peaks_ix  <- melt(peaks_list)
   colnames(peaks_ix) <- c("index", "sample")
   peaks <- peaks_ix %>%
@@ -130,7 +120,24 @@ get_spectra_at_peaks <- function(specmat, peaks_list) {
   rownames(peaks) <- peaks$sample
   peaks$sample <- NULL
   colnames(peaks) <- colnames(specmat)[as.numeric(colnames(peaks))]
-  as.matrix(peaks)
+  peaks <- as.matrix(peaks)
+
+  # convert to binary, if desired
+  if(binary) {
+    peaks <- peaks > 0
+    class(peaks) <- "numeric"
+  }
+  peaks
+}
+
+#' @title Extract Spectra at Peak Positions
+#' @param peaks_list A list whose i^th element contains the indices
+#' of peaks in the i^th sample
+#' @return peaks A matrix containing spectra values filtered to samples
+#' and measurement indices containining peaks.
+#' @export
+get_spectra_at_peaks <- function(specmat, peaks_list) {
+  specmat[, unique(unlist(peaks_ix))]
 }
 
 #' @title Subsample spectra and filter spectra to range based on column names
