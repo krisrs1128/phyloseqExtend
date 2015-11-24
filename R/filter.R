@@ -20,12 +20,12 @@ row_var <- function(x) {
 #' @param q A quantile for the number of samples above the threshold,
 #' determining which samples we keep. So, only samples with many samples above
 #' a will be returned.
-#' @return X A version of X filtered according to a and q.
+#' @return ix The indices for the rows to keep.
 #' @export
 filter_nonzero <- function(X, a = 20, q = 0.9) {
   stats <- rowSums(X > a)
   x_q <- quantile(stats, q)
-  X[stats > x_q, ]
+  which(stats > x_q)
 }
 
 #' @title Vectorized variance filtering
@@ -38,5 +38,5 @@ filter_nonzero <- function(X, a = 20, q = 0.9) {
 filter_variance <- function(X, q = 0.9) {
   stats <- row_var(X)
   x_q <- quantile(stats, q)
-  X[stats > x_q, ]
+  which(stats > x_q)
 }
