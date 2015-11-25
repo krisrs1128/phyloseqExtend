@@ -14,7 +14,7 @@ merge_spectra_opts() for options and defaults.}
 }
 \value{
 A list with the followign objects
-  $X_aligned The spectra matrix with peaks aligned. \cr
+  $X The spectra matrix with peaks aligned. \cr
   $peaks_ix A list whose i^th element give the indices of peaks in the i^th
    sample. \cr
   $X_peaks A matrix whose columns are the positions where a peak was detected

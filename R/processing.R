@@ -92,7 +92,7 @@ merge_spectra_opts <- function(opts = list()) {
 #' @param opts A potentially partially specified list of processing options. See
 #' merge_spectra_opts() for options and defaults.
 #' @return A list with the followign objects
-#'   $X_aligned The spectra matrix with peaks aligned. \cr
+#'   $X The spectra matrix with peaks aligned. \cr
 #'   $peaks_ix A list whose i^th element give the indices of peaks in the i^th
 #'    sample. \cr
 #'   $X_peaks A matrix whose columns are the positions where a peak was detected
@@ -101,15 +101,13 @@ merge_spectra_opts <- function(opts = list()) {
 #'    given position was not identified as a peak.
 #' @export
 process_spectra <- function(X, opts = list()) {
-  # setup
   opts <- merge_spectra_opts(opts)
-  ppms <- get_ppm(X)
 
   # remove any outliers
   row_maxes <- apply(X, 1, max)
   X <- X[row_maxes < opts$thresh_max, ]
   if(any(row_maxes > opts$thresh_max)) {
-    message(sprintf("Discarding samples %s as outliers \n",
+    message(sprintf("Discarding rows %s as outliers \n",
                     paste0(which(row_maxes > opts$thresh_max), collapse = ", ")))
   }
 
@@ -119,8 +117,8 @@ process_spectra <- function(X, opts = list()) {
   peaks_ix <- get_peaks_list(X, opts$peak_opts)
 
   # get zeros matrices
-  X_peaks <- get_spectra_at_peaks(X_aligned, peaks_ix)
-  X_peaks_zeros <- get_spectra_at_peaks_zeros(specmat, peaks_ix, opts$binary)
-  list(X_aligned = X_aligned, peaks_ix = peaks_ix, X_peaks = X_peaks,
+  X_peaks <- get_spectra_at_peaks(X, peaks_ix)
+  X_peaks_zeros <- get_spectra_at_peaks_zeros(X, peaks_ix, opts$binary)
+  list(X = X, peaks_ix = peaks_ix, X_peaks = X_peaks,
        X_peaks_zeros = X_peaks_zeros)
 }

@@ -26,11 +26,10 @@ get_peaks_list <- function(specmat, peak_opts) {
 #' @param specmat A matrix whose column names will be used to derive ppms
 #' @export
 get_ppm <- function(specmat) {
-  if(is.null(colnames(specmat))) {
+  ppm <- as.numeric(colnames(specmat))
+  if(any(is.na(ppm)) | length(ppm) == 0) {
     ppm <- seq_len(ncol(specmat))
-    warning("Using default ppm values")
-  } else {
-    ppm <- as.numeric(colnames(specmat))
+    warning("Using placeholder ppm values")
   }
   ppm
 }
@@ -42,12 +41,13 @@ get_ppm <- function(specmat) {
 #' @importFrom MALDIquant createMassSpectrum removeBaseline
 #' @return baselined_peaks A matrix whose ij^th element is the value of the j^th
 #' unique peak in the i^th unique sample.
+#' @export
 remove_baseline <- function(specmat, baseline_opts = list()) {
   ppms <- get_ppm(specmat)
   nmr_list <- apply(specmat, 1, function(x) createMassSpectrum(ppms, x))
   nmr_list <- do.call(removeBaseline, c(list(object = nmr_list), baseline_opts))
   baselined_peaks <- do.call(rbind, lapply(nmr_list, function(x) x@intensity))
-  rownames(baselined_peaks) <- rownames(baselined_peaks)
+  rownames(baselined_peaks) <- rownames(specmat)
   baselined_peaks
 }
 
@@ -59,12 +59,13 @@ remove_baseline <- function(specmat, baseline_opts = list()) {
 #' @importFrom MALDIquant createMassSpectrum alignSpectra
 #' @return aligned_peaks A matrix whose ij^th element is the value of the j^th
 #' unique peak in the i^th unique sample.
+#' @export
 align_spectra <- function(specmat, align_opts = list()) {
   ppms <- get_ppm(specmat)
   nmr_list <- apply(specmat, 1, function(x) createMassSpectrum(ppms, x))
   nmr_list <- do.call(alignSpectra, c(list(spectra = nmr_list), align_opts))
   aligned_peaks <- do.call(rbind, lapply(nmr_list, function(x) x@intensity))
-  rownames(aligned_peaks) <- rownames(aligned_peaks)
+  rownames(aligned_peaks) <- rownames(specmat)
   aligned_peaks
 }
 
@@ -110,6 +111,7 @@ remove_outlier_spectra <- function(physeq, thresh) {
 #' @importFrom magrittr %>%
 #' @export
 get_spectra_at_peaks_zeros <- function(specmat, peaks_list, binary = FALSE) {
+  names(peaks_list) <- NULL # so melt doesn't try to guess id variables
   peaks_ix  <- melt(peaks_list)
   colnames(peaks_ix) <- c("index", "sample")
   peaks <- peaks_ix %>%
@@ -127,6 +129,7 @@ get_spectra_at_peaks_zeros <- function(specmat, peaks_list, binary = FALSE) {
     peaks <- peaks > 0
     class(peaks) <- "numeric"
   }
+  rownames(peaks) <- rownames(specmat)
   peaks
 }
 
@@ -137,7 +140,7 @@ get_spectra_at_peaks_zeros <- function(specmat, peaks_list, binary = FALSE) {
 #' and measurement indices containining peaks.
 #' @export
 get_spectra_at_peaks <- function(specmat, peaks_list) {
-  specmat[, unique(unlist(peaks_ix))]
+  specmat[, unique(unlist(peaks_list))]
 }
 
 #' @title Subsample spectra and filter spectra to range based on column names
