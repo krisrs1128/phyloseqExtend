@@ -47,7 +47,7 @@ process_ctable <- function(X, opts = list()) {
   }
 
   # perform filtering / transformations
-  ix <- opts$filter_fun(X)
+  ix <- opts$filter_ix(X)
   X <- opts$transform(X[ix, ])
 
   # put back into original form
